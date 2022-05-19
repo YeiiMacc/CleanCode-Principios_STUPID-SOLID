@@ -1,5 +1,5 @@
 import './style.css'
-import './2.ClassComments/1.Classes_c'
+import './2.ClassComments/2.Classes_b'
 
 const app = document.querySelector<HTMLDivElement>('#app')!
 
