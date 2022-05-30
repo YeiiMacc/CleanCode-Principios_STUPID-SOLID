@@ -346,5 +346,107 @@ export class PhotosService {
 }
 ```
 
+Abierto a la edición, pero cerrado a la modificación.
+Vemos este código anterior demasiado expuesto a la edición si la url de consulta llegara a cambiar, aparte que es totalmente dependiente de axios.
+Si en un futuro la url es diferente tendremos que volver método por método a editarla y colocar la nueva, esto violenta nuestro principio.
+Si en un futuro axios deja de funcionar, funciona diferente o simplemente se quiere usar otra forma de realizar la consulta, entonces fallan todos los métodos, tendremos que venir a editarlos igualmente uno por uno, otra violación más al principio.
+Solución:
+Crearemos un nuevo archivo y vamos a descentralizar las operaciones de consulta.
 
+**2.OpenCloseC**
+```
+import axios from 'axios';
+
+export class HttpClient {
+
+    async get (url: string ) {
+        const { data, status } = await axios.get(url);
+        return { data, status };
+    }
+
+}
+```
+
+De esta forma vamos a usar un solo método que realice la consulta ya sea con axios o la forma que se implemente, aparte estaremos recibiendo una url abierta a la edición.
+Ahora la vamos a inyectar a travez de los constructores para implementar su uso.
+
+**2.OpenCloseB**
+```
+    import { HttpClient } from "./2.OpenCloseC";
+
+    export class TodoService { 
+        constructor (private http: HttpClient) {}
+
+        async getTodoItems() {
+            const { data } = await this.http.get('https://jsonplaceholder.typicode.com/todos/');
+            return data;
+        }
+    }
+
+    export class PostService {
+        constructor (private http: HttpClient) {}
+
+        async getPosts() {
+            const { data } = await this.http.get('https://jsonplaceholder.typicode.com/posts');
+            return data;
+        }
+    }
+
+    export class PhotosService {
+        constructor (private http: HttpClient) {}
+
+        async getPhotos() {
+            const { data } = await this.http.get('https://jsonplaceholder.typicode.com/photos');
+            return data;
+        }
+
+    }
+```
+
+Y por último modificaremos las instancias, ahora debemos pasarle la nueva dependencia para que puedan alimentar el constructor.
+
+**2.OpenCloseA**
+```
+import { PhotosService, PostService, TodoService } from './2.OpenCloseB';
+import { HttpClient } from './2.OpenCloseC';
+
+(async () => {
+
+    const httpClient = new HttpClient();
+
+    const todoService = new TodoService(httpClient);
+    const postService = new PostService(httpClient);
+    const photosService = new PhotosService(httpClient);
+
+    const todos = await todoService.getTodoItems();
+    const posts = await postService.getPosts();
+    const photos = await photosService.getPhotos();
+    
+    
+    console.log({ todos, posts, photos });
+})();
+
+```
+
+Perfecto de esta forma tenemos el código mucho mas independiente, con un método descentralizado que se encarga de manejar el método de consulta.
+**Patrón adaptador:** Es el nombre del archivo que creamos *2.OpencCloseC*, el cual se encarga de adaptar o poner en uso ciertas dependencias de terceros con el proyecto. Se recomienda mucho su implementación para que sea mas sencillo hacer modificaciones a futuro, ya que como son manejadas por terceros sus cambios quedan fuera de nuestras manos y pueden afectar al proyecto, con el adaptador solo modificamos un lado y todo queda funcional una vez más.
+Ahora veremos la ventaja de este principio y el principio de responsabilidad unica, vamos a cambiar la forma de consultar, dejaremos de usar axios y usaremos fetch solo con un par de líneas modificadas.
+```
+export class HttpClient {
+
+    async get (url: string ) {
+        const resp = await fetch(url);
+        const data = await resp.json();
+        return { data, status: resp.status };
+    }
+
+}
+```
+Como podemos ver gracias a su independencia sería el único cambio, el resto del código seguiría sin cambio alguno.
+
+##### Detectar violaciones
+*	Cambios normalmente afectan nuestra clase o modulo.
+Cuando se tiene un nuevo requerimiento esto implica abrir la clase y modificar varias funciones o métodos.
+*	Cuando una clase o modulo afecta muchas capas (Presentación, almacenamiento, etc. )
+Usualmente esto significa que la clase tiene muchas responsabilidades, violentando principio de responsabilidad única y open and close.  En este caso se debe refactorizar, si debemos decidir entre unos microsegundos de velocidad o un código mejor entendible para desarrolladores, es mejor un código de calidad. Recordemos que todos estos principios son recomendaciones, no reglas.
 
