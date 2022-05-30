@@ -282,3 +282,69 @@ Pareciera que en cada consejo se repite lo mismo, y en realidad si, porque todos
 No existe un numero exacto que si lo superas esta mal, no, es relativo, pero como desarrollador se puede notar, “Este método o clase está tomando demasiadas líneas de código, se está haciendo difícil de mantener” en ese momento se debe pensar que algo no anda bien y que tal vez se puede refactorizar.
 
 
+#### Open/Closed Principle (OCP)
+Principio abierto y cerrado.
+Es un principio que depende mucho del contexto (framework, ambientes):
+Establece que las entidades de software (clases, módulos, métodos, etc) deben estar abiertas para la extensión, pero cerradas para la modificación.
+Tenemos un método el cual registra un archivo con el nombre de Hola.txt  y los nuevo requisitos sugieren que el nuevo nombre sea adios.txt, si el código no respeta este principio de abierto y cerrado, debemos ir al centro del método a cambiar el nombre manualmente.
+ 
+Para solucionarlo y respetar el principio lo mejor sería que el método reciba la parámetro variable como un string y deje el método libre de ediciones futuras, el único ajuste seria enviar el nuevo nombre a través del argumento y de esa forma el método no será modificado. 
+ 
+El principio abierto – cerrado también se puede lograr de muchas otras maneras, incluso mediante el uso de herencia o mediante patrones de diseño de composición como el patrón de estrategia.
+Recordemos que en el Clean code se recomienda o procura usar la composición frente a la herencia.
+##### Código:
+**2.OpenCloseA**
+```
+import { PhotosService, PostService, TodoService } from './2.OpenCloseB';
+
+(async () => {
+
+    const todoService = new TodoService();
+    const postService = new PostService();
+    const photosService = new PhotosService();
+
+    const todos = await todoService.getTodoItems();
+    const posts = await postService.getPosts();
+    const photos = await photosService.getPhotos();
+    
+    
+    console.log({ todos, posts, photos });
+    
+
+})();
+```
+
+**2.OpenClseB**
+Se debe instalar axios en la terminal con “npm install axios” o
+```
+// Hay que agregar la dependencia de axios ```yarn add axios```
+import axios from 'axios';
+
+export class TodoService { 
+
+    async getTodoItems() {
+        const { data } = await axios.get('https://jsonplaceholder.typicode.com/todos/');
+        return data;
+    }
+}
+
+export class PostService {
+
+    async getPosts() {
+        const { data } = await axios.get('https://jsonplaceholder.typicode.com/posts');
+        return data;
+    }
+}
+
+export class PhotosService {
+
+    async getPhotos() {
+        const { data } = await axios.get('https://jsonplaceholder.typicode.com/photos');
+        return data;
+    }
+
+}
+```
+
+
+
