@@ -1,5 +1,5 @@
 import './style.css'
-import './3.STUPID_CodeSmells/2.HighCoupling'
+import './4.Principio_SOLID/1.SingleResponsibilityPrinciple'
 
 const app = document.querySelector<HTMLDivElement>('#app')!
 
