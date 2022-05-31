@@ -450,3 +450,101 @@ Cuando se tiene un nuevo requerimiento esto implica abrir la clase y modificar v
 *	Cuando una clase o modulo afecta muchas capas (Presentación, almacenamiento, etc. )
 Usualmente esto significa que la clase tiene muchas responsabilidades, violentando principio de responsabilidad única y open and close.  En este caso se debe refactorizar, si debemos decidir entre unos microsegundos de velocidad o un código mejor entendible para desarrolladores, es mejor un código de calidad. Recordemos que todos estos principios son recomendaciones, no reglas.
 
+
+
+#### Liskov Substitution Principle (LSP)
+> “Las funciones que utilicen punteros o referencias a clases base deben ser capaces de usar objetos de clases derivadas sin saberlo” – Robert C. Martin
+
+Creado por la Doctora Barbara Jane Huberman, mas conocida como Barbara Liskov, ganadora del premio de Turing Award.
+Por contribuciones a los fundamentos prácticos y teóricos del lenguaje de programación y el diseño de sistemas, especialmente relacionados con la abstracción de datos, la tolerancia a fallas y la computación distribuida.
+
+Que dice este principio:
+*“Siendo U un subtipo de T, cualquier instancia de T deberia poder ser sustituida por cualquier instancia de U sin alterar las propiedades del sistema”*
+
+
+##### Código:
+Ahora un ejemplo practico donde vamos violentar el principio de Liskov y el principio Open and Close, de esta forma veremos ejemplos de la vida real y como solucionarlos.
+
+**3.LiskovA**
+```
+import { Tesla, Audi, Toyota, Honda } from './3.LiskovB';
+
+(() => {
+    
+    const printCarSeats = ( cars: (Tesla | Audi | Toyota | Honda)[] ) => {
+        
+        for (const car of cars) {
+         
+            if( car instanceof Tesla ) {
+                console.log( 'Tesla', car.getNumberOfTeslaSeats() )
+                continue;
+            }
+            if( car instanceof Audi ) {
+                console.log( 'Audi', car.getNumberOfAudiSeats() )
+                continue;
+            }
+            if( car instanceof Toyota ) {
+                console.log( 'Toyota', car.getNumberOfToyotaSeats() )
+                continue;
+            }
+            if( car instanceof Honda ) {
+                console.log( 'Honda', car.getNumberOfHondaSeats() )
+                continue;
+            }         
+
+        }
+    }
+    
+    const cars = [
+        new Tesla(7),
+        new Audi(2),
+        new Toyota(5),
+        new Honda(5),
+    ];
+
+    printCarSeats( cars );
+
+})();
+```
+
+**3.LiskovA**
+```
+export class Tesla {
+
+    constructor( private numberOfSeats: number ) {}
+
+    getNumberOfTeslaSeats() {
+        return this.numberOfSeats;
+    }
+}
+
+export class Audi {
+
+    constructor( private numberOfSeats: number ) {}
+
+    getNumberOfAudiSeats() {
+        return this.numberOfSeats;
+    }
+}
+
+export class Toyota {
+
+    constructor( private numberOfSeats: number ) {}
+
+    getNumberOfToyotaSeats() {
+        return this.numberOfSeats;
+    }
+}
+
+export class Honda {
+
+    constructor( private numberOfSeats: number ) {}
+
+    getNumberOfHondaSeats() {
+        return this.numberOfSeats;
+    }
+}
+```
+
+
+##### Detectar violaciones

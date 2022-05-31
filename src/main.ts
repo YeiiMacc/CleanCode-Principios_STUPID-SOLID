@@ -1,5 +1,5 @@
 import './style.css'
-import './4.Principio_SOLID/2.OpenCloseA'
+import './4.Principio_SOLID/3.LiskovA'
 
 const app = document.querySelector<HTMLDivElement>('#app')!
 
