@@ -466,6 +466,7 @@ Que dice este principio:
 Ahora un ejemplo practico donde vamos violentar el principio de Liskov y el principio Open and Close, de esta forma veremos ejemplos de la vida real y como solucionarlos.
 
 **3.LiskovA**
+Tenemos nuestro código principal donde evaluamos un arreglo de Autos y hacemos instancia del método de Numero De Puertas, por último, hacemos un arreglo de instancias directo a las clases.
 ```
 import { Tesla, Audi, Toyota, Honda } from './3.LiskovB';
 
@@ -508,6 +509,8 @@ import { Tesla, Audi, Toyota, Honda } from './3.LiskovB';
 ```
 
 **3.LiskovA**
+Tenemos cada una de las clases de Autos, con sus respectivos constructores y métodos.
+
 ```
 export class Tesla {
 
@@ -545,6 +548,316 @@ export class Honda {
     }
 }
 ```
+Se planea agregar una nueva marca de autos, veremos que el código nos cobrará la deuda técnica, será de muchos ajustes. Luego por supuesto veremos como refactorizar el código con principio de Open and Close y Principio de sustitución de Liskov.
 
+Crear marca Volvo según la estructura presente:
 
-##### Detectar violaciones
+**3.LiskovB**
+Crear su nueva clase.
+```
+export class Volvo {
+
+    constructor( private numberOfSeats: number ) {}
+
+    getNumberOfVolvoSeats() {
+        return this.numberOfSeats;
+    }
+}
+```
+
+3.LiskovA
+Instancia a esta nueva clase:
+```
+const cars = [
+        new Tesla(7),
+        new Audi(2),
+        new Toyota(5),
+        new Honda(5),
+        new Volvo(2),
+    ];
+```
+
+Ahora nos presenta un error, ya no cumple la interfaz que tenemos definida en el mismo archivo. Esta sería la clara violación del principio de Liskov.
+```
+const printCarSeats = ( cars: ( Tesla | Audi | Toyota | Honda)[] ) => {
+```
+
+solución:
+```
+const printCarSeats = ( cars: ( Tesla | Audi | Toyota | Honda | Volvo )[] ) => {
+```
+
+Ahora tenemos que acceder al método y colocar una condicional que lo evalué. Otra clara violación, pero esta vez al principio de Open and Close, ya que nos hace modificar el método para una edición.
+```
+    if( car instanceof Volvo ) {
+                console.log( 'Volvo', car.getNumberOfVolvoSeats() )
+                continue;
+    }
+```
+
+**Ahora vamos a refactorizar nuestro código.**
+Al ver nuestras clases mantienen un método en común cada una de ellas, entonces podríamos resumirlo. No lo hacemos con todas las clases y tiene sentido mantenerlas separadas porque cada una a futuro se alimentaria de métodos únicos, por ejemplo, consumo de combustible, tenemos autos eléctricos ellos no lo ocuparían, pero si un tiempo de carga, entonces se quedaran separadas pensando en la realidad.
+
+Se creará una *clase abstracta para vehículo*, esto es propio de la programación orientada a objetos, esto nos ayudara con *la herencia*. Ya sabemos que clean code recomienda la composición sobre la herencia, pero en este caso es la solución mas viable.  Porque buscamos que cada una de las clases tenga acceso a los métodos que la clase abstracta va a darles.
+**3.LiskovB**
+```
+export abstract class Vehicle {
+
+    abstract getNumberOfSeats(): number;
+    
+}
+```
+
+Ahora cada clase va a heredar de Vehicle y al ser abstracta nos obligara a implementar el método que contiene en cada una de ellas.
+
+**3.LiskovB refactorizado**
+De esta forma concluimos la refactorización de la clase.
+```
+export abstract class Vehicle {
+
+    abstract getNumberOfSeats(): number;
+
+}
+
+export class Tesla extends Vehicle{
+
+    constructor( private numberOfSeats: number ) {
+        super();
+    }
+
+    getNumberOfSeats() {
+        return this.numberOfSeats;
+    }
+}
+
+export class Audi extends Vehicle{
+
+    constructor( private numberOfSeats: number ) {
+        super();
+    }
+
+    getNumberOfSeats() {
+        return this.numberOfSeats;
+    }
+}
+
+export class Toyota extends Vehicle{
+
+    constructor( private numberOfSeats: number ) {
+        super();
+    }
+
+    getNumberOfSeats() {
+        return this.numberOfSeats;
+    }
+}
+
+export class Honda extends Vehicle{
+
+    constructor( private numberOfSeats: number ) {
+        super();
+    }
+
+    getNumberOfSeats() {
+        return this.numberOfSeats;
+    }
+}
+
+export class Volvo extends Vehicle{
+
+    constructor( private numberOfSeats: number ) {
+        super();
+    }
+
+    getNumberOfSeats() {
+        return this.numberOfSeats;
+    }
+}
+```
+
+**3.LiskovA**
+Ahora veremos el tema de la interfaz donde debemos especificar el nombre de la marca, ya que debería permitirnos colocar cualquier marca y mantenerse inalterable.
+```
+const printCarSeats = ( cars: (Tesla | Audi | Toyota | Honda | Volvo)[] ) => {
+```
+
+Vamos a decirle que cars: ahora es de tipo Vehicle, de esta forma nos permitirá recibir cualquier marca que sea subclase de la clase Vehicle. Principio sustitución de Liskov.
+```
+const printCarSeats = ( cars: Vehicle[] ) => {
+```
+
+Cambiamos cada una de las instancias a métodos de los condicionales. Vemos que un cambio les hizo mucho daño, por violar el principio de Open and Close.
+```
+const printCarSeats = ( cars: Vehicle[] ) => {
+    
+    for (const car of cars) {
+        
+        if( car instanceof Tesla ) {
+            console.log( 'Tesla', car.getNumberOfSeats() )
+            continue;
+        }
+        if( car instanceof Audi ) {
+            console.log( 'Audi', car.getNumberOfSeats() )
+            continue;
+        }
+        if( car instanceof Toyota ) {
+            console.log( 'Toyota', car.getNumberOfSeats() )
+            continue;
+        }
+        if( car instanceof Honda ) {
+            console.log( 'Honda', car.getNumberOfSeats() )
+            continue;
+        }
+        if( car instanceof Volvo ) {
+            console.log( 'Volvo', car.getNumberOfSeats() )
+            continue;
+        }         
+    }
+}
+```
+
+Perfecto ahora si hacemos una *nueva clase “Ford”* con su instancia de la marca “Ford” por el principio de sustitución de Liskov nos permite ejecutar sin problemas.
+
+**3.LiskovB**
+```
+export class Ford extends Vehicle{
+
+    constructor( private numberOfSeats: number ) {
+        super();
+    }
+
+    getNumberOfSeats() {
+        return this.numberOfSeats;
+    }
+}
+```
+
+**3.LiskovA**
+```
+const cars = [
+        new Tesla(7),
+        new Audi(2),
+        new Toyota(5),
+        new Honda(5),
+        new Volvo(2),
+        new Ford(2),
+    ];
+```
+
+Pero la deuda técnica con el principio de Open and Close nos cobra factura, el código condicional fallo con esta modificación (No nos imprimió nada en consola como esperábamos, ya que el principio de Liskov nos permite que la función acepte cualquier valor que sea subclase de Vehicle para la ejecución). Esto ocurrió por no escribir código fácil de mantener y tolerante a cambios. 
+**Ahora vamos a refactorizarlo también:**
+```
+cars.forEach( car => {
+            console.log( car.constructor.name, car.getNumberOfSeats())
+        });
+```
+
+Listo con estas tres líneas de código evitamos todos los condicionales if actuales y por venir. Ahora tenemos el código listo.
+*Para agregar una nueva marca solo sigue 2 pasos:*
+* 1.	Crea una nueva subclase en 3.LiskovB con su nombre respectivo.
+* 2.	Crea una nueva instancia de la marca en 3.LiskovA arreglo cars.
+Eso seria todo, no se debe modificar nada. Parece mentira luego de todo lo que tuvimos que cambiar antes, pero esta es la facilidad de acatar los principios SOLID, en este caso respetamos el principio de Open and Close y el mas importante sustitución de Liskov.
+###### Código final:
+
+**3.LiskovA**
+```
+import { Tesla, Audi, Toyota, Honda, Volvo, Vehicle, Ford } from './3.LiskovB';
+
+(() => {
+    
+    const printCarSeats = ( cars: Vehicle[] ) => {
+        
+        cars.forEach( car => {
+            console.log( car.constructor.name, car.getNumberOfSeats())
+        });
+        
+    }
+    
+    const cars = [
+        new Tesla(7),
+        new Audi(2),
+        new Toyota(5),
+        new Honda(5),
+        new Volvo(2),
+        new Ford(2),
+    ];
+
+    printCarSeats( cars );
+
+})();
+```
+
+**3.LiskovB**
+```
+export abstract class Vehicle {
+
+    abstract getNumberOfSeats(): number;
+
+}
+
+export class Tesla extends Vehicle{
+
+    constructor( private numberOfSeats: number ) {
+        super();
+    }
+
+    getNumberOfSeats() {
+        return this.numberOfSeats;
+    }
+}
+
+export class Audi extends Vehicle{
+
+    constructor( private numberOfSeats: number ) {
+        super();
+    }
+
+    getNumberOfSeats() {
+        return this.numberOfSeats;
+    }
+}
+
+export class Toyota extends Vehicle{
+
+    constructor( private numberOfSeats: number ) {
+        super();
+    }
+
+    getNumberOfSeats() {
+        return this.numberOfSeats;
+    }
+}
+
+export class Honda extends Vehicle{
+
+    constructor( private numberOfSeats: number ) {
+        super();
+    }
+
+    getNumberOfSeats() {
+        return this.numberOfSeats;
+    }
+}
+
+export class Volvo extends Vehicle{
+
+    constructor( private numberOfSeats: number ) {
+        super();
+    }
+
+    getNumberOfSeats() {
+        return this.numberOfSeats;
+    }
+}
+
+export class Ford extends Vehicle{
+
+    constructor( private numberOfSeats: number ) {
+        super();
+    }
+
+    getNumberOfSeats() {
+        return this.numberOfSeats;
+    }
+}
+```
