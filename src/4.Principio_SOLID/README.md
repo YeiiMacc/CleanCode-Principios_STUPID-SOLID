@@ -861,3 +861,192 @@ export class Ford extends Vehicle{
     }
 }
 ```
+
+#### Interface Segregation Principle (ISP)
+Principio de segregación de interfaz
+> “Los clientes no deberían estar obligados a depender de interfaces que no utilicen” -Rober C. Martin
+
+Este principio establece que los cliente3s no deberían verse forzados a depender de interfaces que no usan.
+Por ejemplo, tenemos un método de Volar y nos dice que tenemos que implementarla, pero nosotros como personas no podemos volar. Ahora que si lo implemento y este método cambia significativamente, me va a afectar directamente aunque no lo quiera.
+
+
+##### Código:
+Tendremos el manejo de cierto tipo de aves como clases y sus actividades como métodos. Veremos que algunas aves pueden realizar actividades propias que otras no, ejemplo unas podrán volar y otras no, unas podrán nadar, otras correr.
+```
+class Toucan {
+    public fly() {}
+    public eat() {}
+} 
+
+class Hummingbird {
+    public fly() {}
+    public eat() {}
+}
+```
+
+Son los dos primeros ejemplos, pero notamos que tienen los mismos métodos en común, podemos hacer uso de una interfaz. A medida que ingresemos más aves tendremos más métodos en común alimentando la interfaz.
+```
+interface Bird {
+    fly(): void;
+    eat(): void;
+}
+```
+
+Ahora veremos el problema que genera la interfaz al obligarnos implementar los métodos en aves que no los usan, como un avestruz que no puede volar.
+```
+ interface Bird {
+    fly(): void;
+    eat(): void;
+}
+
+class Toucan implements Bird {
+    public fly() {}
+    public eat() {}
+} 
+
+class Hummingbird implements Bird {
+    public fly() {}
+    public eat() {}
+}
+
+class Ostrich implements Bird {
+    public fly() {
+        throw new Error('esta ave no vuela');
+    }
+    public eat() {}
+    public run() {}
+}
+```
+
+Con un throw Error podemos solucionarlo momentáneamente. Pero si en algún momento el método llega a cambiar, por ejemplo, ahora retorna un numero de minutos de vuelo. Nos llevaría a una falla, tendríamos que editar el método a retornar 0 por ejemplo.
+Pero todo esto nos lleva a violar el principio de segregación de interfaces.
+Tenemos ahora una clase más, un pingüino que no puede volar, pero esta ave puede nadar como otras, un pato, por ejemplo. Entonces tendríamos el método de nadar en la interfaz, lo que nos obligaría a implementarlo en cada uno de los métodos anteriores y solventarlos con un throw Error de “esta ave no puede nadar”. Un dolor de cabeza este tema.
+
+```
+class Penguin implements Bird {
+    public fly() {
+        throw new Error('esta ave no vuela');
+    }
+    public eat() {}
+    public run() {}
+    public swim() {}
+}
+```
+
+Ahora veremos cómo solucionar implementando el principio de segregación.
+Tendremos una nueva interfaz para los tipos de aves especiales, tenemos claro que todas las aves comen o mínimo pueden caminar, por ello mantendremos la interfaz de Ave.
+Ahora la primera segregación es la interfaz FlyingBird, de esta forma solo afectaremos las aves que si vuelan y en caso de un cambio en el método de volar solo afectaría a las aves que en verdad lo necesitan, las aves como avestruz y pingüino no se verían afectadas al no implementar el método.
+```
+interface Bird {
+    eat(): void;
+    run(): void;
+}
+
+interface FlyingBird {
+    fly(): void;
+}
+
+class Toucan implements Bird, FlyingBird {
+    public fly() {}
+    public eat() {}
+    public run() {}
+} 
+
+class Hummingbird implements Bird, FlyingBird {
+    public fly() {}
+    public eat() {}
+    public run() {}
+}
+
+class Ostrich implements Bird {
+    public eat() {}
+    public run() {}
+}
+
+class Penguin implements Bird {
+    public eat() {}
+    public run() {}
+    public swim() {}
+}
+```
+
+El mismo caso sería apara las aves que pueden nadar, podría ser otra segregación.
+Ahora nos dicen el método run será para evaluar la cantidad de distancia recorrida para aves terrestres o que su principal desplazamiento es caminando. Debemos hacer una segregación para este método, ya que los tucanes por ejemplo o los colibríes no viven desplazándose por el suelo, ellos tienen su método principal de volar.
+```
+interface Bird {
+    eat(): void;
+}
+
+interface FlyingBird {
+    fly(): void;
+}
+
+interface RunningBird {
+    run(): void;
+}
+
+interface SwimmerBird {
+    swim(): void;
+}
+
+class Toucan implements Bird, FlyingBird {
+    public eat() {}
+    public fly() {}
+} 
+
+class Hummingbird implements Bird, FlyingBird {
+    public eat() {}
+    public fly() {}
+}
+
+class Ostrich implements Bird, RunningBird {
+    public eat() {}
+    public run() {}
+}
+
+class Penguin implements Bird, SwimmerBird {
+    public eat() {}
+    public swim() {}
+}
+```
+
+Perfecto, ahora si témenos un cambio por ejemplo de cuantos minutos puede estar volando un ave sin descanso, modificamos run() en la interfaz RunningBird que nos retorne un número, ahora bien como esta interfaz solo la implementan las aves que vuelan los demás no se verían afectados en nada.
+
+```
+interface FlyingBird {
+    fly(): number;
+}
+```
+
+```
+class Toucan implements Bird, FlyingBird {
+    public eat() {}
+    public fly() { return 20}
+} 
+
+class Hummingbird implements Bird, FlyingBird {
+    public eat() {}
+    public fly() { return 10}
+}
+
+class Ostrich implements Bird, RunningBird {
+    public eat() {}
+    public run() {}
+}
+
+class Penguin implements Bird, SwimmerBird {
+    public eat() {}
+    public swim() {}
+}
+```
+
+Podemos ver que nos facilitó solo modificar los métodos que si lo usan, los demás se mantuvieron intactos. Gracias a la Al principio de segregación de interfaces no somos obligados a implementar métodos innecesarios.
+
+##### Detectar violaciones.
+
+Como se puede notar este principio esta estrechamente relacionado con el principio de responsabilidad única y el principio de sustitución des Liskov.
+
+-	Si las interfaces que diseñamos nos obligan a violar los principios de responsabilidad única y sustitución de Liskov.
+Tal vez por la cantidad de interfaces a crear es un poco tedioso manejarlas y clasificarlas, pero a largo plazo este buen manejo se paga al querer implementar mas código, mantenerlo o realizar ediciones. En cambio, cuando por pereza tal vez recurrimos a dejar sin refactorizar, estas interfaces violando varios principios también nos da un pago y no de los buenos, cuando queremos hacer un cambio, o implementar más código todo el código antiguo comienza a fallar y se convierte en una cadena de errores a solucionar.
+Por eso es mejor recorrer la milla extra y hacer un código de calidad que tanto para ti como para otro desarrollador es muy agradable poder encontrar código de calidad, disponible para aceptar cambios.
+
