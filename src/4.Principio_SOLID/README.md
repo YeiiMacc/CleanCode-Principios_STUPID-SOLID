@@ -1050,3 +1050,35 @@ Como se puede notar este principio esta estrechamente relacionado con el princip
 Tal vez por la cantidad de interfaces a crear es un poco tedioso manejarlas y clasificarlas, pero a largo plazo este buen manejo se paga al querer implementar mas código, mantenerlo o realizar ediciones. En cambio, cuando por pereza tal vez recurrimos a dejar sin refactorizar, estas interfaces violando varios principios también nos da un pago y no de los buenos, cuando queremos hacer un cambio, o implementar más código todo el código antiguo comienza a fallar y se convierte en una cadena de errores a solucionar.
 Por eso es mejor recorrer la milla extra y hacer un código de calidad que tanto para ti como para otro desarrollador es muy agradable poder encontrar código de calidad, disponible para aceptar cambios.
 
+#### Dependency Inversion Principle (DIP)
+Principio de inversión de dependencias.
+
+> “Los módulos de alto nivel no deben depender de módulos de bajo nivel. Ambos deben depender de abstracciones. Las abstracciones no deben depender de concreciones. Los detalles deben depender de abstracciones” – Robert C. Martin
+
+*	Los módulos de alto nivel no deberían depender de módulos de bajo nivel.
+Esto quiere decir que los componentes importantes o capas superiores no deben depender de los componentes menos importantes. Ejemplo que tenemos una aplicación y nuestro front-end es quien dicta las reglas de negocio, Esto no tiene sentido.
+
+Los componentes mas importantes son aquellos centrados en resolver el problema subyacente al negocio, es decir, la capa de dominio.
+Los menos importantes son los que están próximos a la infraestructura, es decir, aquellos relacionados con la UI, la persistencia, la comunicación con API externas, etc.
+
+##### Arquitectura hexadecimal:
+Imaginemos que tenemos un sistema de persistencia basado en archivos de texto o archivos json que se encuentran en file system, pero por motivos de escalabilidad y rendimiento tenemos que cambiar la base de datos documental a un servidor como MongoDB, SQLServer, Posgres o cualquier base de datos. Si tenemos desacoplada correctamente la capa de persistencia y lo hemos aplicado con el patron adaptador o patron de repositorio, la implementación de la capa debe ser indiferente a las reglas de negocio, en este caso la capa de dominio. Por lo tanto, cambiar a un sistema distinto como los nombrados anterior mente debe ser una tarea sumamente sencilla, solo deberían cambiar una o dos clases adaptadoras. Las demás capas del modelo de negocio no deberían verse afectadas en lo más mínimo.
+El mismo caso si un web service cambia y ahora cambia su url que es muy común o ahora retorna otro tipo de dato o la forma de regresar la información ya no viene en un formato Json sino en Xml o viceversa.  Estos cambios deberían ser sencillos de adaptar en nuestra aplicación, pero si nos dicen que este cambio afecta muchas partes del sistema quiere decir que estamos violentando el principio de inversión de dependencias.
+
+
+*	Ambos deberían depender de abstracciones.
+*	Las abstracciones no deberían depender de detalles.
+*	Los detalles deberían depender de abstracciones.
+
+**Depender de abstracciones:**
+Nos referimos a clases abstractas o interfaces.
+Uno de los motivos más importantes por el cual las reglas de negocio o capa de dominio deben depender de estas y no de concreciones es que aumenta su tolerancia al cambio.
+¿Poque obtenemos tolerancia al cambio?
+Cada cambio en un componente abstracto implica un cambio en su implementación.
+Por el contrario, los cambios en implementaciones concretas, la mayoría de veces, no requieren cambios en las interfaces que implementa.
+
+**Inyección de dependencias:**
+Dependencia en programación, significa que un modulo o componente requiere de otro para poder realizar su trabajo.
+En algunos momentos nuestro programa o aplicación llegara a estar formado por muchos módulos. Cuando esto pase, es cuando debemos usar inyección de dependencias.
+
+
