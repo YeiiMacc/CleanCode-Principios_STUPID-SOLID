@@ -1,5 +1,5 @@
 import './style.css'
-import './4.Principio_SOLID/3.LiskovA'
+import './4.Principio_SOLID/5.DependecyInversion/05.dependency-a'
 
 const app = document.querySelector<HTMLDivElement>('#app')!
 

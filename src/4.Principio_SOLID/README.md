@@ -1061,14 +1061,14 @@ Esto quiere decir que los componentes importantes o capas superiores no deben de
 Los componentes mas importantes son aquellos centrados en resolver el problema subyacente al negocio, es decir, la capa de dominio.
 Los menos importantes son los que están próximos a la infraestructura, es decir, aquellos relacionados con la UI, la persistencia, la comunicación con API externas, etc.
 
-##### Arquitectura hexadecimal:
+**Arquitectura hexadecimal:**
 Imaginemos que tenemos un sistema de persistencia basado en archivos de texto o archivos json que se encuentran en file system, pero por motivos de escalabilidad y rendimiento tenemos que cambiar la base de datos documental a un servidor como MongoDB, SQLServer, Posgres o cualquier base de datos. Si tenemos desacoplada correctamente la capa de persistencia y lo hemos aplicado con el patron adaptador o patron de repositorio, la implementación de la capa debe ser indiferente a las reglas de negocio, en este caso la capa de dominio. Por lo tanto, cambiar a un sistema distinto como los nombrados anterior mente debe ser una tarea sumamente sencilla, solo deberían cambiar una o dos clases adaptadoras. Las demás capas del modelo de negocio no deberían verse afectadas en lo más mínimo.
 El mismo caso si un web service cambia y ahora cambia su url que es muy común o ahora retorna otro tipo de dato o la forma de regresar la información ya no viene en un formato Json sino en Xml o viceversa.  Estos cambios deberían ser sencillos de adaptar en nuestra aplicación, pero si nos dicen que este cambio afecta muchas partes del sistema quiere decir que estamos violentando el principio de inversión de dependencias.
-
 
 *	Ambos deberían depender de abstracciones.
 *	Las abstracciones no deberían depender de detalles.
 *	Los detalles deberían depender de abstracciones.
+
 
 **Depender de abstracciones:**
 Nos referimos a clases abstractas o interfaces.
@@ -1077,8 +1077,327 @@ Uno de los motivos más importantes por el cual las reglas de negocio o capa de 
 Cada cambio en un componente abstracto implica un cambio en su implementación.
 Por el contrario, los cambios en implementaciones concretas, la mayoría de veces, no requieren cambios en las interfaces que implementa.
 
+
 **Inyección de dependencias:**
 Dependencia en programación, significa que un modulo o componente requiere de otro para poder realizar su trabajo.
 En algunos momentos nuestro programa o aplicación llegara a estar formado por muchos módulos. Cuando esto pase, es cuando debemos usar inyección de dependencias.
 
+##### Codigo:
 
+Tenemos código que los trae posts de información, simulando que estos datos se reciben de una api, lo que nos hace implementar una dependencia, en este caso se encuentra oculta en el archivo B.
+
+**05.dependency-a.ts**
+A realiza una instancia de B(PostService) y recibe los datos mediante una petición asíncrona, por último imprime por consola los datos obtenidos.
+```
+import { PostService } from './05.dependency-b';
+
+// Main
+(async () => {
+
+    const postService = new PostService();
+
+    const posts = await postService.getPosts();
+ 
+    console.log({ posts })
+
+})();
+```
+
+**05.dependency-b.ts**
+*B*  tiene una interfaz de Post para establecer su estructura, recordando que en TS sostiene un tipado más fuertes que otros lenguajes como javascript. También se encuentra el *servicio(PostService)* donde con una propiedad privada se instancia un arreglo donde se guardaran los post. 
+*getPost* está realizando una nueva instancia a *C(LocalDataBaseService)* que viene siendo un ayudante que simula la respuesta de una API.  Luego almacena los datos recibidos y por ultimo los retorna.
+Parece que todo está bien, pero no, resulta que tenemos una dependencia oculta dentro de este código.  En este código pequeño es fácil encontrar la instancia a *C(LocalDataBaseService)* y saber que dependemos de ella, pero si tenemos miles de líneas escritas con diferentes instrucciones se complicaría identificar que usamos una dependencia.
+El problema no solo es no verla, sino que el día de mañana esta dependencia genera un cambio, ya sea simple en el nombre o su funcionalidad y afectaría directamente a *B(PostService)* porque tendría que buscarse la instrucción y realizar el ajuste. Esto generaría una dependencia altamente interconectado entre los dos archivos, violando varios principios, haciendo muy difícil su mantenimiento y testing a pesar de ser un código funcional.
+
+```
+import { LocalDataBaseService } from "./05.dependency-c";
+
+export interface Post {
+    body:   string;
+    id:     number;
+    title:  string;
+    userId: number;
+}
+ 
+
+export class PostService {
+
+    private posts: Post[] = [];
+
+    constructor() {}
+
+    async getPosts() {
+        const jsonDB = new LocalDataBaseService();
+        this.posts = await jsonDB.getFakePosts();
+
+        return this.posts;
+    }
+}
+```
+
+**05.dependency-c.ts**
+```
+export class LocalDataBaseService {
+
+    constructor() {}
+
+    async getFakePosts() {
+        return [
+            {
+                'userId': 1,
+                 'id': 1,
+                'title': 'sunt aut facere repellat provident occaecati excepturi optio reprehenderit',
+                'body': 'quia et suscipit suscipit recusandae consequuntur expedita et cum reprehenderit molestiae ut ut quas totam nostrum rerum est autem sunt rem eveniet architecto'
+            },
+            {
+                'userId': 1,
+                'id': 2,
+                'title': 'qui est esse',
+                'body': 'est rerum tempore vitae sequi sint nihil reprehenderit dolor beatae ea dolores neque fugiat blanditiis voluptate porro vel nihil molestiae ut reiciendis qui aperiam non debitis possimus qui neque nisi nulla'
+            }]
+    }
+}
+```
+
+Para una solución y refactorizar el código en el archivo *A* deberíamos establecer al momento de la creación de la instancia de *B(PostService)* quien será el proveedor de esta información. De esta forma se podría fácilmente decidir de donde se leerá la data, si del archivo *C(LocalDataBaseService)* que tenemos simulando la Api, en siguiente archivo *JSON(local-database)* o incluso directamente una API funcional desde la base de datos.
+Para *PostService* debería ser transparente e indiferente de donde venga esta información, es decir no se debe preocupar por conectarse a un endpoint o a una base de datos.
+
+**A solucionar:**
+*	Dependencia oculta.
+*	Poder aplicar principio de Open and close. (abiertas a la expansión pero cerradas a la modificacion).
+	
+
+Incluir siguiente archivo con la data local *carpeta data*.
+
+**local-database.json**
+```
+[
+    {
+      "userId": 1,
+      "id": 1,
+      "title": "sunt aut facere repellat provident occaecati excepturi optio reprehenderit",
+      "body": "quia et suscipit suscipit recusandae consequuntur expedita et cum reprehenderit molestiae ut ut quas totam nostrum rerum est autem sunt rem eveniet architecto"
+    },
+    {
+      "userId": 1,
+      "id": 2,
+      "title": "qui est esse",
+      "body": "est rerum tempore vitae sequi sint nihil reprehenderit dolor beatae ea dolores neque fugiat blanditiis voluptate porro vel nihil molestiae ut reiciendis qui aperiam non debitis possimus qui neque nisi nulla"
+    },
+    {
+      "userId": 1,
+      "id": 3,
+      "title": "ea molestias quasi exercitationem repellat qui ipsa sit aut",
+      "body": "et iusto sed quo iure voluptatem occaecati omnis eligendi aut ad voluptatem doloribus vel accusantium quis pariatur molestiae porro eius odio et labore et velit aut"
+    },
+    {
+      "userId": 1,
+      "id": 4,
+      "title": "eum et est occaecati",
+      "body": "ullam et saepe reiciendis voluptatem adipisci sit amet autem assumenda provident rerum culpa quis hic commodi nesciunt rem tenetur doloremque ipsam iure quis sunt voluptatem rerum illo velit"
+    },
+    {
+      "userId": 1,
+      "id": 5,
+      "title": "nesciunt quas odio",
+      "body": "repudiandae veniam quaerat sunt sed alias aut fugiat sit autem sed est voluptatem omnis possimus esse voluptatibus quis est aut tenetur dolor neque"
+    }
+  ]
+```
+
+
+Ahora se creará un nuevo proveedor para leer el anterior archivo json y enviarlo como respuesta.
+Para esto se importa la data y crea una nueva clase en el *archivo C.*
+**05.dependency-c.ts**
+```
+import localPosts from '../data/local-database.json'
+```
+
+```
+export class JsonDataBaseService {
+    async getPosts() {
+        return localPosts;
+    }
+}
+```
+
+Ahora ya no se usará LocalDataBaseService, se usará la nueva clase JsonDataBaseService. Veremos todo lo que implica este pequeño cambio:
+*Archivo B:*
+Ahora la instancia será a una clase diferente por ende la instancia anterior dejaría de funcionar y para este ajuste ya estamos *violentando el principio de open and close*, porque tenemos que abrir la implementación de un método que debería estar cerrado, para poder hacer funcionar el código con una nueva clase y eso no debería ocurrir.
+**05.dependency-b.ts**
+```
+// import { LocalDataBaseService } from "./05.dependency-c";
+import { JsonDataBaseService } from "./05.dependency-c";
+
+export interface Post {
+    body:   string;
+    id:     number;
+    title:  string;
+    userId: number;
+}
+ 
+
+export class PostService {
+
+    private posts: Post[] = [];
+
+    constructor() {}
+
+    async getPosts() {
+        // const jsonDB = new LocalDataBaseService();
+        const jsonDB = new JsonDataBaseService();
+        // this.posts = await jsonDB.getFakePosts();
+        this.posts = await jsonDB.getPosts();
+
+        return this.posts;
+    }
+}
+```
+
+**Principio de inyección de dependencias:**
+Se recibe la dependencia a usar a través del constructor y se accede a ella para llamar al método de consulta.
+**05.dependency-b.ts**
+```
+export class PostService {
+
+    private posts: Post[] = [];
+
+    constructor(private postProvider: JsonDataBaseService) {}
+
+    async getPosts() {       
+        this.posts = await this.postProvider.getPosts();
+        return this.posts;
+    }
+}
+```
+
+Se inyecta la dependencia a través del constructor, de esta forma será definido desde el archivo A quien será el proveedor del servicio.
+
+**05.dependency-a.ts**
+```
+import { PostService } from './05.dependency-b';
+import { JsonDataBaseService } from './05.dependency-c';
+
+// Main
+(async () => {
+
+    const provider = new JsonDataBaseService();
+
+    const postService = new PostService( provider );
+
+    const posts = await postService.getPosts();
+ 
+    console.log({ posts })
+
+})();
+```
+
+Ahora bien, ya se está inyectando la dependencia, facilita el trabajo, pero aun si tenemos un cambio se debe volver a ajustar cada tipo de datos y nombre de método.
+Para solucionar esto se vara la inversión de dependencias, además usaremos la sustitución de liskov. Asi tenemos código fácil de actualizar, leer y mantener.
+El principio de inversión de dependencias habla de basarnos en abstracciones, es decir usar clases abstractas.
+Lo mejor sería un archivo por cada clase o servicio, pero solo manejaremos archivos A B y C para no hacer tan extenso este Ejemplo.
+En nuestro archivo C crearemos una clase abstracta para implementarla.
+
+**05.dependency-c.ts**
+```
+export abstract class PostProvider {
+    abstract getPosts(): Promise<Post[]>;
+}
+```
+
+Ahora tenemos una clase abstracta la cual implementarla implica que tendremos un getPosts, que retorna una promesa con tipo Post, que es la interfaz del archivo B.
+
+Ahora bien, en el archivo B vamos a modificar el tipo de dependencia que se recibe en el constructor. De esta forma no importa si hacemos instancia a LocalDataBaseService , JsonDataBaseService o cualquier otro, la única condición es que estos implementen la clase abstracta PostProvider.
+
+**05.dependency-b.ts**
+```
+export class PostService {
+
+    private posts: Post[] = [];
+
+    constructor(private postProvider: PostProvider) {}
+
+    async getPosts() {       
+        this.posts = await this.postProvider.getPosts();
+        return this.posts;
+    }
+}
+```
+
+En el archivo C vamos a colocar la implementación de la clase abstracta PostProvider.
+
+**05.dependency-c.ts**
+```
+import localPosts from '../data/local-database.json'
+import { Post } from './05.dependency-b';
+
+export abstract class PostProvider {
+    abstract getPosts(): Promise<Post[]>;
+}
+
+export class LocalDataBaseService implements PostProvider {
+
+    constructor() {}
+
+    async getPosts() {
+        return [
+            {
+                'userId': 1,
+                 'id': 1,
+                'title': 'sunt aut facere repellat provident occaecati excepturi optio reprehenderit',
+                'body': 'quia et suscipit suscipit recusandae consequuntur expedita et cum reprehenderit molestiae ut ut quas totam nostrum rerum est autem sunt rem eveniet architecto'
+            },
+            {
+                'userId': 1,
+                'id': 2,
+                'title': 'qui est esse',
+                'body': 'est rerum tempore vitae sequi sint nihil reprehenderit dolor beatae ea dolores neque fugiat blanditiis voluptate porro vel nihil molestiae ut reiciendis qui aperiam non debitis possimus qui neque nisi nulla'
+            }]
+    }
+
+}
+
+export class JsonDataBaseService implements PostProvider {
+    async getPosts() {
+        return localPosts;
+    }
+}
+```
+
+Con esta implementación se puede llamar a cualquiera de los dos LocalDataBaseService o  JsonDataBaseService desde el archivo A y no sería necesario ningún ajuste.
+
+
+**Ejercicio:**
+Ahora se hará una nueva implementación de otro proveedor, directamente de un api WebApiPostService.
+
+**05.dependency-c.ts**
+```
+export class WebApiPostService implements PostProvider {
+    async getPosts() {
+        const res = await fetch('https://jsonplaceholder.typicode.com/posts');
+        return await res.json();
+    }
+}
+```
+
+**05.dependency-a.ts**
+```
+import { PostService } from './05.dependency-b';
+import { JsonDataBaseService, LocalDataBaseService, WebApiPostService } from './05.dependency-c';
+
+// Main
+(async () => {
+
+    // const provider = new JsonDataBaseService();
+    // const provider = new LocalDataBaseService();
+    const provider = new WebApiPostService();
+    
+    const postService = new PostService( provider );
+
+    const posts = await postService.getPosts();
+ 
+    console.log({ posts })
+
+})();
+```
+Como lo notamos hacer el cambio a otro proveedor fue muy sencillo, en el archivo C se hace la implementación de la nueva clase y en el archivo A se hace una instancia de esta clase. El Service archivo B no debió modificarse en absolutamente nada.
